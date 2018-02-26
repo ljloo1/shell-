@@ -1,0 +1,71 @@
+sudo rpm -ivh http://repo.zabbix.com/zabbix/2.4/rhel/6/x86_64/zabbix-release-2.4-1.el6.noarch.rpm
+sudo yum install -y zabbix-agent
+sudo sed -i 's/127.0.0.1/172.16.10.81/g' /etc/zabbix/zabbix_agentd.conf
+sudo service zabbix-agent restart
+sudo chkconfig --level 2345 zabbix-agent on
+
+
+
+##snmp配置
+yum install -y net-snmp
+cat > /etc/snmp/snmpd.conf<<EOF
+com2sec notConfigUser  default       212313123adadawdawd
+group   notConfigGroup v1           notConfigUser
+group   notConfigGroup v2c           notConfigUser
+view    systemview    included   .1
+access  notConfigGroup ""      any       noauth    exact  systemview none none
+syslocation hxcme.com
+syscontact qxoe
+dontLogTCPWrappersConnects yes
+EOF
+service snmpd restart
+chkconfig --level 2345 snmpd on
+chkconfig --level 2345 ntpd on
+
+
+
+
+yum install -y zabbix-server
+
+Creating initial database
+
+Create zabbix database and user on MySQL.
+
+# mysql -uroot
+mysql> create database zabbix character set utf8 collate utf8_bin;
+mysql> grant all privileges on zabbix.* to zabbix@localhost identified by 'zabbix';
+mysql> exit
+Import initial schema and data.
+
+# 
+# mysql -uroot zabbix < schema.sql
+# mysql -uroot zabbix < images.sql
+# mysql -uroot zabbix < data.sql
+Starting Zabbix server process
+
+Edit database configuration in zabbix_server.conf
+
+# vi /etc/zabbix/zabbix_server.conf
+DBHost=localhost
+DBName=zabbix
+DBUser=zabbix
+DBPassword=zabbix
+Start Zabbix server process.
+
+# service zabbix-server start
+Editing PHP configuration for Zabbix frontend
+
+Apache configuration file for Zabbix frontend is located in /etc/httpd/conf.d/zabbix.conf. Some PHP settings are already configured.
+
+php_value max_execution_time 300
+php_value memory_limit 128M
+php_value post_max_size 16M
+php_value upload_max_filesize 2M
+php_value max_input_time 300
+# php_value date.timezone Europe/Riga
+It's necessary to uncomment the “date.timezone” setting and set the right timezone for you. After changing the configuration file restart the apache web server.
+
+# service httpd restart
+
+cat /etc/zabbix/zabbix-agent.conf
+
