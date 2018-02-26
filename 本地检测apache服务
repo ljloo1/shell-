@@ -1,0 +1,23 @@
+pid=`cat /opt/scripts/web_monitor.pid`
+if [ $pid -eq -1 ] || [ $pid -eq 1 ];
+then
+	exit;
+fi
+echo 1 > /opt/scripts/web_monitor.pid
+Time_Code=`date`
+Http_Code=`curl -o /dev/null -s -w %{http_code} http://127.0.0.1/`
+if [ $Http_Code -eq 200 ];
+then
+	echo 0 > /opt/scripts/web_monitor.pid
+else
+	echo "$Time_Code dd is down by http code : $Http_Code" >> ~/backup-db/down.log
+	sudo service apache2 stop
+	sudo service apache2 start
+	if [ $? -ne 0 ];
+	then 
+		echo -1 > /opt/scripts/web_monitor.pid
+		echo "$Time_Code apache start fail, please check now!" >> ~/backup-db/down.log
+	else
+		echo 0 > /opt/scripts/web_monitor.pid
+	fi
+fi
