@@ -1,0 +1,50 @@
+此项配置必然断网，请服务器接上显示器直接操作，或者用vsphere client的控制台进行配置。切记不可以ssh登录配置。
+
+配置文件（IP，网关和DNS请根据生产环境重新指定）：
+cat /etc/sysconfig/network-scripts/ifcfg-bond0 
+DEVICE=bond0
+TYPE=Ethernet
+BOOTPROTO=none
+IPADDR=192.168.0.134
+PREFIX=24
+GATEWAY=192.168.0.1
+DNS1=192.168.0.1
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=yes
+IPV6INIT=no
+ONBOOT=yes
+
+cat /etc/sysconfig/network-scripts/ifcfg-eth0 
+DEVICE=eth0
+TYPE=Ethernet
+BOOTPROTO=none
+MASTER=bond0
+SLAVE=yes
+ONBOOT=yes
+
+cat /etc/sysconfig/network-scripts/ifcfg-eth1 
+DEVICE=eth1
+TYPE=Ethernet
+BOOTPROTO=none
+DEFROUTE=yes
+MASTER=bond0
+SLAVE=yes
+ONBOOT=yes
+
+cat /etc/modprobe.d/bonding.conf 
+alias bond0 bonding
+options bond0 miimon=100 mode=1
+
+配置完成后执行命令：
+chkconfig --level 2345 NetworkManager off
+chkconfig --level 2345 network on
+rmmod bonding       #centos6.5之前的版本,不用执行此命令。
+modprobe bonding
+service ManagerManager stop
+service network restart
+
+查看信息指令：
+lsmod | grep bonding   # 查看linux是否支持bond功能
+
+注意事项：
+1、一定要stop NetworkManager 用network来管理网络。否则bond0会起不来。
